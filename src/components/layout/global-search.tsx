@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 
 import { CommandDialog, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -49,7 +50,7 @@ export function GlobalSearch({ open, setOpen }: { open: boolean; setOpen: (value
             key={item.id}
             onClick={() => {
               setOpen(false);
-              router.push(`/items?item=${item.id}`);
+              router.push(`/items?item=${item.id}` as Route);
             }}
           >
             {item.code} • {item.description}
