@@ -25,7 +25,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ItemFormDialog } from "@/components/items/item-form-dialog";
 import { ItemViewDialog } from "@/components/items/item-view-dialog";
 
-const boolOptions = ["all", "yes", "no"];
+const boolOptions = ["all", "yes", "no"] as const;
+
+// ────────────────────────────────────────────────
+// Add these types to make filters type-safe
+type FilterKey =
+  | "itemGroup"
+  | "category"
+  | "brand"
+  | "type"
+  | "trade"
+  | "nonTrade"
+  | "withSerial"
+  | "bundle";
+
+type Filters = Record<FilterKey, string>;
+// ────────────────────────────────────────────────
 
 export function ItemsTable() {
   const items = useInventoryStore((s) => s.items);
@@ -39,7 +54,7 @@ export function ItemsTable() {
   const [openView, setOpenView] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | undefined>();
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     itemGroup: "all",
     category: "all",
     brand: "all",
@@ -69,7 +84,7 @@ export function ItemsTable() {
           ["bundle", filters.bundle]
         ] as const) {
           if (val === "all") continue;
-          const boolValue = item[key];
+          const boolValue = item[key as keyof Item];
           if (val === "yes" && !boolValue) return false;
           if (val === "no" && boolValue) return false;
         }
@@ -276,11 +291,11 @@ export function ItemsTable() {
                 ["brand", "Brand", unique("brand")],
                 ["type", "Type", unique("type")]
               ].map(([key, label, options]) => (
-                <div key={key} className="space-y-1">
+                <div key={key as string} className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">{label}</p>
                   <Select
-                    value={filters[key as keyof typeof filters]}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, [key]: value }))}
+                    value={filters[key as FilterKey]}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, [key as FilterKey]: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={String(label)} />
@@ -308,7 +323,7 @@ export function ItemsTable() {
                   <p className="text-xs font-medium text-muted-foreground">{label}</p>
                   <div className="grid grid-cols-3 gap-1 rounded-md border p-1">
                     {boolOptions.map((option) => {
-                      const isActive = filters[key as keyof typeof filters] === option;
+                      const isActive = filters[key as FilterKey] === option;
                       return (
                         <Button
                           key={`${key}-${option}`}
@@ -316,7 +331,7 @@ export function ItemsTable() {
                           size="sm"
                           variant={isActive ? "secondary" : "ghost"}
                           className="h-8 px-2 text-xs"
-                          onClick={() => setFilters((prev) => ({ ...prev, [key]: option }))}
+                          onClick={() => setFilters((prev) => ({ ...prev, [key as FilterKey]: option }))}
                         >
                           {option === "all" ? "All" : option === "yes" ? "Yes" : "No"}
                         </Button>
@@ -330,6 +345,7 @@ export function ItemsTable() {
         ) : null}
       </div>
 
+      {/* Rest of your component remains unchanged */}
       <div className="glass rounded-2xl p-2">
         <div className="space-y-3 md:hidden">
           {table.getRowModel().rows?.length ? (
@@ -413,7 +429,7 @@ export function ItemsTable() {
                       setOpenView(true);
                     }}
                   >
-                  {row.getVisibleCells().map((cell) => (
+                    {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
                         className={cell.column.id === "description" ? "max-w-[420px]" : undefined}
@@ -429,14 +445,12 @@ export function ItemsTable() {
                           <p className="truncate" title={String(cell.getValue())}>
                             {String(cell.getValue())}
                           </p>
+                        ) : cell.column.id === "actions" ? (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </div>
                         ) : (
-                          cell.column.id === "actions" ? (
-                            <div onClick={(e) => e.stopPropagation()}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </div>
-                          ) : (
-                            flexRender(cell.column.columnDef.cell, cell.getContext())
-                          )
+                          flexRender(cell.column.columnDef.cell, cell.getContext())
                         )}
                       </TableCell>
                     ))}
